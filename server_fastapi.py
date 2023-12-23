@@ -204,6 +204,8 @@ if __name__ == "__main__":
         auto_split: bool,
         emotion: Optional[Union[int, str]] = None,
         reference_audio=None,
+        style_text: Optional[str] = None,
+        style_weight: float = 0.7,
     ) -> Union[Response, Dict[str, any]]:
         """TTS实现函数"""
         # 检查模型是否存在
@@ -212,7 +214,7 @@ if __name__ == "__main__":
             return {"status": 10, "detail": f"模型model_id={model_id}未加载"}
         # 检查是否提供speaker
         if speaker_name is None and speaker_id is None:
-            logger.error(f"/voice 请求错误：推理请求未提供speaker_name或speaker_id")
+            logger.error("/voice 请求错误：推理请求未提供speaker_name或speaker_id")
             return {"status": 11, "detail": "请提供speaker_name或speaker_id"}
         elif speaker_name is None:
             # 检查speaker_id是否存在
@@ -261,6 +263,8 @@ if __name__ == "__main__":
                     device=loaded_models.models[model_id].device,
                     emotion=emotion,
                     reference_audio=ref_audio,
+                    style_text=style_text,
+                    style_weight=style_weight,
                 )
                 audio = gradio.processing_utils.convert_to_16_bit_wav(audio)
         else:
@@ -282,6 +286,8 @@ if __name__ == "__main__":
                             device=loaded_models.models[model_id].device,
                             emotion=emotion,
                             reference_audio=ref_audio,
+                            style_text=style_text,
+                            style_weight=style_weight,
                         )
                     )
                     audios.append(np.zeros(int(44100 * 0.2)))
@@ -312,6 +318,8 @@ if __name__ == "__main__":
         auto_split: bool = Query(False, description="自动切分"),
         emotion: Optional[Union[int, str]] = Query(None, description="emo"),
         reference_audio: UploadFile = File(None),
+        style_text: Optional[str] = Form(None, description="风格文本"),
+        style_weight: float = Query(0.7, description="风格权重"),
     ):
         """语音接口，若需要上传参考音频请仅使用post请求"""
         logger.info(
@@ -331,6 +339,8 @@ if __name__ == "__main__":
             auto_split=auto_split,
             emotion=emotion,
             reference_audio=reference_audio,
+            style_text=style_text,
+            style_weight=style_weight,
         )
 
     @app.get("/voice")
@@ -350,6 +360,8 @@ if __name__ == "__main__":
         auto_translate: bool = Query(False, description="自动翻译"),
         auto_split: bool = Query(False, description="自动切分"),
         emotion: Optional[Union[int, str]] = Query(None, description="emo"),
+        style_text: Optional[str] = Query(None, description="风格文本"),
+        style_weight: float = Query(0.7, description="风格权重"),
     ):
         """语音接口"""
         logger.info(
@@ -368,6 +380,8 @@ if __name__ == "__main__":
             auto_translate=auto_translate,
             auto_split=auto_split,
             emotion=emotion,
+            style_text=style_text,
+            style_weight=style_weight,
         )
 
     @app.get("/models/info")
@@ -415,7 +429,7 @@ if __name__ == "__main__":
             elif os.path.isfile(os.path.join(model_dir, "../config.json")):
                 config_path = os.path.join(model_dir, "../config.json")
             else:
-                logger.error(f"/models/add 模型添加失败：未在模型所在目录以及上级目录找到config.json文件")
+                logger.error("/models/add 模型添加失败：未在模型所在目录以及上级目录找到config.json文件")
                 return {
                     "status": 15,
                     "detail": "查询未传入配置文件路径，同时默认路径./与../中不存在配置文件config.json。",
